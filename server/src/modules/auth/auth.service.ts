@@ -6,22 +6,25 @@ import {
 } from '@nestjs/common'
 import { JwtService } from '@nestjs/jwt'
 import { verify } from 'argon2'
-import { Response } from 'express'
+import { Request, Response } from 'express'
 import { UserService } from '../user/user.service'
 import { AuthDto } from './dto'
+import {
+	EXPIRE_DAY_REFRESH_TOKEN,
+	REFRESH_TOKEN_NAME
+} from 'src/common/constants'
+import { ConfigService } from '@nestjs/config'
+import { cookieConfig } from 'src/config'
 
 @Injectable()
 export class AuthService {
-	// TODO: put constants to separate file
-	EXPIRE_DAY_REFRESH_TOKEN = 1
-	REFRESH_TOKEN_NAME = 'refreshToken'
-
 	constructor(
 		private jwt: JwtService,
-		private userService: UserService
+		private userService: UserService,
+		private configService: ConfigService
 	) {}
 
-	async login(dto: AuthDto) {
+	async login(dto: AuthDto): Promise<any> {
 		// eslint-disable-next-line @typescript-eslint/no-unused-vars
 		const { password, ...user } = await this.validate(dto)
 		const tokens = await this.issueTokens(user.id)
@@ -32,7 +35,7 @@ export class AuthService {
 		}
 	}
 
-	async register(dto: AuthDto) {
+	async register(dto: AuthDto): Promise<any> {
 		const oldUser = await this.userService.getByEmail(dto.email)
 
 		if (oldUser) {
@@ -48,16 +51,21 @@ export class AuthService {
 		}
 	}
 
-	async getNewTokens(refreshToken: string) {
+	async getNewTokens(req: Request, res: Response): Promise<any> {
+		const refreshToken = req.cookies[REFRESH_TOKEN_NAME]
+
+		if (!refreshToken) {
+			this.removeRefreshTokenFromResponse(res)
+			throw new UnauthorizedException()
+		}
+
 		const result = await this.jwt.verifyAsync(refreshToken)
 
 		if (!result) {
 			throw new UnauthorizedException('Invalid refresh token.')
 		}
-
 		// eslint-disable-next-line @typescript-eslint/no-unused-vars
 		const { password, ...user } = await this.userService.getById(result.id)
-
 		const tokens = await this.issueTokens(user.id)
 
 		return {
@@ -66,7 +74,9 @@ export class AuthService {
 		}
 	}
 
-	private async issueTokens(userId: string) {
+	private async issueTokens(
+		userId: string
+	): Promise<{ accessToken: string; refreshToken: string }> {
 		const data = { id: userId }
 
 		const accessToken = this.jwt.sign(data, {
@@ -82,7 +92,7 @@ export class AuthService {
 		}
 	}
 
-	private async validate(dto: AuthDto) {
+	private async validate(dto: AuthDto): Promise<any> {
 		const user = await this.userService.getByEmail(dto.email)
 
 		if (!user) {
@@ -98,28 +108,23 @@ export class AuthService {
 		return user
 	}
 
-	async addRefreshTokenToResponse(res: Response, refreshToken: string) {
+	async addRefreshTokenToResponse(
+		res: Response,
+		refreshToken: string
+	): Promise<void> {
 		const expiresIn = new Date()
-		expiresIn.setDate(expiresIn.getDate() + this.EXPIRE_DAY_REFRESH_TOKEN)
+		expiresIn.setDate(expiresIn.getDate() + EXPIRE_DAY_REFRESH_TOKEN)
 
-		res.cookie(this.REFRESH_TOKEN_NAME, refreshToken, {
-			httpOnly: true,
-			// TODO: put domain in env
-			domain: 'localhost',
-			expires: expiresIn,
-			secure: true,
-			sameSite: 'lax'
+		res.cookie(REFRESH_TOKEN_NAME, refreshToken, {
+			...cookieConfig,
+			expires: expiresIn
 		})
 	}
 
-	async removeRefreshTokenFromResponse(res: Response) {
-		res.cookie(this.REFRESH_TOKEN_NAME, '', {
-			httpOnly: true,
-			// TODO: put domain in env
-			domain: 'localhost',
-			expires: new Date(),
-			secure: true,
-			sameSite: 'lax'
+	async removeRefreshTokenFromResponse(res: Response): Promise<void> {
+		res.cookie(REFRESH_TOKEN_NAME, '', {
+			...cookieConfig,
+			expires: new Date()
 		})
 	}
 }
