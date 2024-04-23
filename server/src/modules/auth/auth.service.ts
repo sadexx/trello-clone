@@ -13,15 +13,13 @@ import {
 	EXPIRE_DAY_REFRESH_TOKEN,
 	REFRESH_TOKEN_NAME
 } from 'src/common/constants'
-import { ConfigService } from '@nestjs/config'
 import { cookieConfig } from 'src/config'
 
 @Injectable()
 export class AuthService {
 	constructor(
 		private jwt: JwtService,
-		private userService: UserService,
-		private configService: ConfigService
+		private userService: UserService
 	) {}
 
 	async login(dto: AuthDto): Promise<any> {
