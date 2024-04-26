@@ -26,19 +26,17 @@ export class PomodoroSettingDto {
 	intervalsCount?: number
 }
 
-export class UserDto extends PomodoroSettingDto {
+export class CreateUserDto extends PomodoroSettingDto {
 	@IsEmail()
-	@IsOptional()
-	email?: string
+	email: string
 
 	@IsString()
 	@IsOptional()
 	name?: string
 
-	@IsOptional()
 	@MinLength(6, {
 		message: 'Password must be at least 6 characters long.'
 	})
 	@IsString()
-	password?: string
+	password: string
 }

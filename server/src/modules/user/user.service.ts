@@ -1,28 +1,39 @@
-import { Injectable } from '@nestjs/common'
+import { Injectable, NotFoundException } from '@nestjs/common'
 import { hash } from 'argon2'
 import { PrismaService } from 'src/prisma.service'
-import { AuthDto } from '../auth/dto'
 import { startOfDay, subDays } from 'date-fns'
-import { UserDto } from './dto'
+import { CreateUserDto, UpdateUserDto, UserResponse } from './dto'
+import { UserRepository } from '../repository/repositories'
+import { User } from '@prisma/client'
 
 @Injectable()
 export class UserService {
-	constructor(private prisma: PrismaService) {}
+	constructor(
+		private prisma: PrismaService,
+		protected userRepository: UserRepository
+	) {}
 
-	async getById(id: string) {
-		return this.prisma.user.findUnique({
-			where: { id },
-			include: { tasks: true }
-		})
+	async getAll(): Promise<UserResponse[]> {
+		return await this.userRepository
+			.getAllWithRelations()
+			.then(UserResponse.mapMulti)
 	}
 
-	async getByEmail(email: string) {
-		return this.prisma.user.findUnique({
-			where: { email }
-		})
+	async getById(id: string): Promise<UserResponse> {
+		const user = await this.userRepository.getByIdWithRelations(id)
+
+		if (!user) {
+			throw new NotFoundException('User not found.')
+		}
+
+		return UserResponse.map(user)
 	}
 
-	async getProfile(id: string) {
+	async getByEmail(email: string): Promise<User> {
+		return await this.userRepository.getByEmail(email)
+	}
+
+	async getProfile(id: string): Promise<UserResponse> {
 		const profile = await this.getById(id)
 
 		const totalTasks = profile.tasks.length
@@ -57,42 +68,48 @@ export class UserService {
 			}
 		})
 
-		// eslint-disable-next-line @typescript-eslint/no-unused-vars
-		const { password, ...rest } = profile
+		profile.statistics = [
+			{ label: 'Total', value: totalTasks },
+			{ label: 'Completed tasks', value: completedTasks },
+			{ label: 'Today tasks', value: todayTasks },
+			{ label: 'Week tasks', value: weekTasks }
+		]
 
-		return {
-			user: rest,
-			statistics: [
-				{ label: 'Total', value: totalTasks },
-				{ label: 'Completed tasks', value: completedTasks },
-				{ label: 'Today tasks', value: todayTasks },
-				{ label: 'Week tasks', value: weekTasks }
-			]
-		}
+		return profile
 	}
 
-	async create(dto: AuthDto) {
-		const user = {
-			email: dto.email,
-			name: '',
-			password: await hash(dto.password)
-		}
+	async create(dto: CreateUserDto): Promise<UserResponse> {
+		const hashedPassword = await hash(dto.password)
 
-		return this.prisma.user.create({
-			data: user
-		})
+		return await this.userRepository
+			.create({
+				...dto,
+				password: hashedPassword
+			})
+			.then(UserResponse.map)
 	}
 
-	async update(id: string, dto: UserDto) {
-		let data = dto
+	async update(id: string, dto: UpdateUserDto): Promise<UserResponse> {
+		const user = await this.getById(id)
+
+		if (!user) {
+			throw new NotFoundException('User not found.')
+		}
 
 		if (dto.password) {
-			data = { ...dto, password: await hash(dto.password) }
+			dto.password = await hash(dto.password)
 		}
 
-		return this.prisma.user.update({
-			where: { id },
-			data
-		})
+		return await this.userRepository.update(id, dto).then(UserResponse.map)
+	}
+
+	async delete(id: string): Promise<void> {
+		const user = await this.getById(id)
+
+		if (!user) {
+			throw new NotFoundException('User not found.')
+		}
+
+		await this.userRepository.delete(id)
 	}
 }

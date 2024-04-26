@@ -8,12 +8,13 @@ import { JwtService } from '@nestjs/jwt'
 import { verify } from 'argon2'
 import { Request, Response } from 'express'
 import { UserService } from '../user/user.service'
-import { AuthDto } from './dto'
+import { AuthDto, TokenResponse } from './dto'
 import {
 	EXPIRE_DAY_REFRESH_TOKEN,
 	REFRESH_TOKEN_NAME
 } from 'src/common/constants'
 import { cookieConfig } from 'src/config'
+import { CreateUserDto, UserResponse } from '../user/dto'
 
 @Injectable()
 export class AuthService {
@@ -22,34 +23,33 @@ export class AuthService {
 		private userService: UserService
 	) {}
 
-	async login(dto: AuthDto): Promise<any> {
-		// eslint-disable-next-line @typescript-eslint/no-unused-vars
-		const { password, ...user } = await this.validate(dto)
+	async login(dto: AuthDto): Promise<UserResponse & TokenResponse> {
+		const user = await this.validate(dto)
 		const tokens = await this.issueTokens(user.id)
 
 		return {
-			user,
+			...user,
 			...tokens
 		}
 	}
 
-	async register(dto: AuthDto): Promise<any> {
+	async register(dto: CreateUserDto): Promise<UserResponse & TokenResponse> {
 		const oldUser = await this.userService.getByEmail(dto.email)
 
 		if (oldUser) {
 			throw new BadRequestException('User with this email already exists.')
 		}
-		// eslint-disable-next-line @typescript-eslint/no-unused-vars
-		const { password, ...user } = await this.userService.create(dto)
+
+		const user = await this.userService.create(dto)
 		const tokens = await this.issueTokens(user.id)
 
 		return {
-			user,
+			...user,
 			...tokens
 		}
 	}
 
-	async getNewTokens(req: Request, res: Response): Promise<any> {
+	async getNewTokens(req: Request, res: Response): Promise<TokenResponse> {
 		const refreshToken = req.cookies[REFRESH_TOKEN_NAME]
 
 		if (!refreshToken) {
@@ -62,19 +62,16 @@ export class AuthService {
 		if (!result) {
 			throw new UnauthorizedException('Invalid refresh token.')
 		}
-		// eslint-disable-next-line @typescript-eslint/no-unused-vars
-		const { password, ...user } = await this.userService.getById(result.id)
+
+		const user = await this.userService.getById(result.id)
 		const tokens = await this.issueTokens(user.id)
 
 		return {
-			user,
 			...tokens
 		}
 	}
 
-	private async issueTokens(
-		userId: string
-	): Promise<{ accessToken: string; refreshToken: string }> {
+	private async issueTokens(userId: string): Promise<TokenResponse> {
 		const data = { id: userId }
 
 		const accessToken = this.jwt.sign(data, {
@@ -90,7 +87,7 @@ export class AuthService {
 		}
 	}
 
-	private async validate(dto: AuthDto): Promise<any> {
+	private async validate(dto: AuthDto): Promise<UserResponse> {
 		const user = await this.userService.getByEmail(dto.email)
 
 		if (!user) {
@@ -103,7 +100,7 @@ export class AuthService {
 			throw new UnauthorizedException('Invalid email or password.')
 		}
 
-		return user
+		return UserResponse.map(user)
 	}
 
 	async addRefreshTokenToResponse(
