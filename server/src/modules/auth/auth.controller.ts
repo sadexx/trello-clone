@@ -10,7 +10,8 @@ import {
 } from '@nestjs/common'
 import { AuthService } from './auth.service'
 import { Request, Response } from 'express'
-import { AuthDto } from './dto'
+import { AuthDto, TokenResponse } from './dto'
+import { CreateUserDto, UserResponse } from '../user/dto'
 
 @Controller('auth')
 export class AuthController {
@@ -22,7 +23,7 @@ export class AuthController {
 	async login(
 		@Body() dto: AuthDto,
 		@Res({ passthrough: true }) res: Response
-	): Promise<any> {
+	): Promise<UserResponse & TokenResponse> {
 		const { refreshToken, ...response } = await this.authService.login(dto)
 		await this.authService.addRefreshTokenToResponse(res, refreshToken)
 
@@ -33,9 +34,9 @@ export class AuthController {
 	@HttpCode(200)
 	@Post('register')
 	async register(
-		@Body() dto: AuthDto,
+		@Body() dto: CreateUserDto,
 		@Res({ passthrough: true }) res: Response
-	): Promise<any> {
+	): Promise<UserResponse & TokenResponse> {
 		const { refreshToken, ...response } = await this.authService.register(dto)
 		await this.authService.addRefreshTokenToResponse(res, refreshToken)
 
@@ -47,7 +48,7 @@ export class AuthController {
 	async getNewTokens(
 		@Req() req: Request,
 		@Res({ passthrough: true }) res: Response
-	): Promise<any> {
+	): Promise<TokenResponse> {
 		const { refreshToken, ...response } = await this.authService.getNewTokens(
 			req,
 			res
