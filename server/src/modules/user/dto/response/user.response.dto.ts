@@ -32,11 +32,9 @@ export class UserResponse {
 	statistics: StatisticsResponse[]
 
 	static map(data: User): UserResponse {
-		const user = plainToClass(UserResponse, data, {
+		return plainToClass(UserResponse, data, {
 			excludeExtraneousValues: true
 		})
-
-		return user
 	}
 
 	static mapMulti(data: User[]): UserResponse[] {
