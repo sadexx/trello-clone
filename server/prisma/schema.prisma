@@ -63,7 +63,7 @@ model PomodoroSession {
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  IsCompled Boolean? @default(false) @map("is_completed")
+  isCompleted Boolean? @default(false) @map("is_completed")
 
   user   User   @relation(fields: [userId], references: [id])
   userId String @map("user_id")
@@ -79,7 +79,7 @@ model PomodoroRound {
   updatedAt DateTime @updatedAt @map("updated_at")
 
   totalSeconds Int      @map("total_seconds")
-  IsCompled    Boolean? @default(false) @map("is_completed")
+  isCompleted  Boolean? @default(false) @map("is_completed")
 
   pomodoroSession   PomodoroSession @relation(fields: [pomodoroSessionId], references: [id], onDelete: Cascade)
   pomodoroSessionId String          @map("pomodoro_session_id")

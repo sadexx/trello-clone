@@ -46,10 +46,21 @@ export class UserController {
 
 	@UsePipes(new ValidationPipe())
 	@HttpCode(200)
-	@Patch()
+	@Patch('me')
+	@Auth()
+	async updateMe(
+		@CurrentUser('id') id: string,
+		@Body() dto: UpdateUserDto
+	): Promise<UserResponse> {
+		return await this.userService.update(id, dto)
+	}
+
+	@UsePipes(new ValidationPipe())
+	@HttpCode(200)
+	@Patch(':id')
 	@Auth()
 	async update(
-		@CurrentUser('id') id: string,
+		@Param('id') id: string,
 		@Body() dto: UpdateUserDto
 	): Promise<UserResponse> {
 		return await this.userService.update(id, dto)
@@ -60,6 +71,6 @@ export class UserController {
 	@Delete(':id')
 	@Auth()
 	async delete(@Param('id') id: string): Promise<void> {
-		return await this.userService.delete(id)
+		await this.userService.delete(id)
 	}
 }

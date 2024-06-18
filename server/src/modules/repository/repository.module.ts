@@ -1,9 +1,9 @@
 import { Module } from '@nestjs/common'
-import { UserRepository } from './repositories'
+import { TaskRepository, UserRepository } from './repositories'
 import { PrismaService } from 'src/prisma.service'
 
 @Module({
-	providers: [PrismaService, UserRepository],
-	exports: [UserRepository]
+	providers: [PrismaService, UserRepository, TaskRepository],
+	exports: [UserRepository, TaskRepository]
 })
 export class RepositoryModule {}
