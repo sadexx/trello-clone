@@ -4,6 +4,7 @@ import { AuthModule } from './modules/auth/auth.module'
 import { UserModule } from './modules/user/user.module'
 import { RepositoryModule } from './modules/repository/repository.module'
 import { TaskModule } from './modules/task/task.module'
+import { TimeBlockModule } from './modules/time-block/time-block.module'
 
 @Module({
 	imports: [
@@ -11,7 +12,8 @@ import { TaskModule } from './modules/task/task.module'
 		RepositoryModule,
 		AuthModule,
 		UserModule,
-		TaskModule
+		TaskModule,
+		TimeBlockModule
 	]
 })
 export class AppModule {}
