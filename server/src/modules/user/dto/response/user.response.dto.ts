@@ -1,6 +1,6 @@
 import { User } from '@prisma/client'
 import { Expose, plainToClass } from 'class-transformer'
-import { IsArray, IsNumber, IsString } from 'class-validator'
+import { IsArray, IsDate, IsNumber, IsString } from 'class-validator'
 
 export class StatisticsResponse {
 	@IsString()
@@ -30,6 +30,10 @@ export class UserResponse {
 	@IsArray()
 	@Expose()
 	statistics: StatisticsResponse[]
+
+	@IsDate()
+	@Expose()
+	createdAt: Date
 
 	static map(data: User): UserResponse {
 		return plainToClass(UserResponse, data, {

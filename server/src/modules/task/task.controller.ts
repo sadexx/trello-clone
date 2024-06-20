@@ -14,7 +14,7 @@ import { TaskService } from './task.service'
 import { Auth, CurrentUser } from 'src/common/decorators'
 import { CreateTaskDto, TaskResponse, UpdateTaskDto } from './dto'
 
-@Controller('task')
+@Controller('tasks')
 export class TaskController {
 	constructor(private readonly taskService: TaskService) {}
 
