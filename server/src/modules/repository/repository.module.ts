@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common'
 import {
 	TaskRepository,
 	TimeBlockRepository,
+	TimerRepository,
 	UserRepository
 } from './repositories'
 import { PrismaService } from 'src/prisma.service'
@@ -11,8 +12,14 @@ import { PrismaService } from 'src/prisma.service'
 		PrismaService,
 		UserRepository,
 		TaskRepository,
-		TimeBlockRepository
+		TimeBlockRepository,
+		TimerRepository
 	],
-	exports: [UserRepository, TaskRepository, TimeBlockRepository]
+	exports: [
+		UserRepository,
+		TaskRepository,
+		TimeBlockRepository,
+		TimerRepository
+	]
 })
 export class RepositoryModule {}
