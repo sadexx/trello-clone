@@ -31,6 +31,10 @@ export class UserResponse {
 	@Expose()
 	statistics: StatisticsResponse[]
 
+	@IsNumber()
+	@Expose()
+	intervalsCount: number
+
 	@IsDate()
 	@Expose()
 	createdAt: Date
